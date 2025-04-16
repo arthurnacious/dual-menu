@@ -1,3 +1,5 @@
+import DynamicSidebar from "@/components/main/side-bar";
+import TopBar from "@/components/main/top-bar";
 import { FC, ReactNode } from "react";
 
 interface Props {
@@ -5,7 +7,17 @@ interface Props {
 }
 
 const MainLayout: FC<Props> = ({ children }) => {
-  return <div>{children}</div>;
+  return (
+    <>
+      <TopBar />
+      <div className="flex flex-col h-screen bg-white dark:bg-gray-900 text-black dark:text-white">
+        <div className="flex">
+          <DynamicSidebar />
+          <main className="flex-1 p-4">{children}</main>
+        </div>
+      </div>
+    </>
+  );
 };
 
 export default MainLayout;
