@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, FC } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -13,6 +13,7 @@ import {
   Grid,
   Settings,
   LucideIcon,
+  Globe,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -20,15 +21,77 @@ type MenuItem = {
   id: string;
   icon: LucideIcon;
   label: string;
+  href?: string;
+  children?: SubMenuItem[];
 };
 
 type SubMenuItem = {
   text: string;
   icon: LucideIcon;
-  href: string;
+  href?: string;
+  children?: SubMenuItem[];
 };
 
-type SecondaryMenus = Record<string, SubMenuItem[]>;
+const SubMenuItems: FC<{ items: SubMenuItem[] }> = ({ items }) => {
+  return (
+    <>
+      {items.map((item, index) => {
+        const hasChildren = item.children && item.children.length > 0;
+        const [open, setOpen] = useState(false);
+
+        return (
+          <div key={index}>
+            {hasChildren ? (
+              <button
+                onClick={() => setOpen(!open)}
+                className="w-full flex justify-between items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 text-gray-900 hover:text-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 dark:hover:text-white duration-300"
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.text}</span>
+                </div>
+                <svg
+                  className={`w-4 h-4 transition-transform duration-300 ${
+                    open ? "rotate-90" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            ) : (
+              <Link
+                href={item.href || "#"}
+                className="w-full flex justify-between items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 text-gray-900 hover:text-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 dark:hover:text-white duration-300"
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.text}</span>
+                </div>
+              </Link>
+            )}
+
+            <AnimatePresence>
+              {open && hasChildren && item.children && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="ml-6 mt-1 space-y-1"
+                >
+                  <SubMenuItems items={item.children} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        );
+      })}
+    </>
+  );
+};
 
 export default function DynamicSidebar() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -37,67 +100,84 @@ export default function DynamicSidebar() {
   const secondaryRef = useRef<HTMLDivElement>(null);
 
   const menuItems: MenuItem[] = [
-    { id: "dashboard", icon: BarChart2, label: "Dashboard" },
-    { id: "users", icon: Users, label: "Users" },
-    { id: "sales", icon: DollarSign, label: "Sales" },
-    { id: "orders", icon: ShoppingBag, label: "Orders" },
-    { id: "projects", icon: Briefcase, label: "Projects" },
-    { id: "education", icon: BookOpen, label: "Education" },
-    { id: "resources", icon: Layers, label: "Resources" },
-    { id: "meetings", icon: Calendar, label: "Meetings" },
-    { id: "settings", icon: Settings, label: "Settings" },
+    {
+      id: "dashboard",
+      icon: BarChart2,
+      label: "Dashboard",
+      href: "/dashboard",
+    },
+    {
+      id: "users",
+      icon: Users,
+      label: "Users",
+      children: [
+        { text: "All Users", icon: Users, href: "/users" },
+        { text: "Create New", icon: Users, href: "/users/create" },
+        { text: "Teams", icon: Users, href: "/users/teams" },
+      ],
+    },
+    { id: "sales", icon: DollarSign, label: "Sales", href: "/sales" },
+    { id: "orders", icon: ShoppingBag, label: "Orders", href: "/orders" },
+    {
+      id: "globallist",
+      icon: Globe,
+      label: "GlobalList",
+      children: [
+        { text: "All Debtors", icon: Briefcase, href: "/debtors" },
+        { text: "Outstanding", icon: Briefcase, href: "/debtors/outstanding" },
+        {
+          text: "Something else",
+          icon: Briefcase,
+          href: "/debtors/somethingelse",
+        },
+      ],
+    },
+    { id: "education", icon: BookOpen, label: "Education", href: "/education" },
+    { id: "resources", icon: Layers, label: "Resources", href: "/resources" },
+    { id: "meetings", icon: Calendar, label: "Meetings", href: "/meetings" },
+    {
+      id: "settings",
+      icon: Settings,
+      label: "Settings",
+      children: [
+        {
+          text: "Profile",
+          icon: Settings,
+          children: [
+            {
+              text: "Edit Profile",
+              icon: Settings,
+              href: "/settings/profile/edit",
+            },
+            {
+              text: "View Profile",
+              icon: Settings,
+              href: "/settings/profile/view",
+            },
+          ],
+        },
+        {
+          text: "Security",
+          icon: Settings,
+          href: "/settings/security",
+        },
+        {
+          text: "Preferences",
+          icon: Settings,
+          href: "/settings/preferences",
+        },
+      ],
+    },
   ];
 
-  const secondaryMenus: SecondaryMenus = {
-    dashboard: [
-      { text: "Overview", icon: BarChart2, href: "/dashboard" },
-      { text: "Analytics", icon: BarChart2, href: "/dashboard/analytics" },
-      { text: "Reports", icon: BarChart2, href: "/dashboard/reports" },
-    ],
-    users: [
-      { text: "All Users", icon: Users, href: "/users" },
-      { text: "Create New", icon: Users, href: "/users/create" },
-      { text: "Teams", icon: Users, href: "/users/teams" },
-    ],
-    sales: [
-      { text: "Revenue", icon: DollarSign, href: "/sales/revenue" },
-      { text: "Transactions", icon: DollarSign, href: "/sales/transactions" },
-      { text: "Products", icon: DollarSign, href: "/sales/products" },
-    ],
-    orders: [
-      { text: "Recent Orders", icon: ShoppingBag, href: "/orders" },
-      { text: "Processing", icon: ShoppingBag, href: "/orders/processing" },
-      { text: "Shipped", icon: ShoppingBag, href: "/orders/shipped" },
-    ],
-    projects: [
-      { text: "Active Projects", icon: Briefcase, href: "/projects" },
-      { text: "Create Project", icon: Briefcase, href: "/projects/create" },
-      { text: "Archive", icon: Briefcase, href: "/projects/archive" },
-    ],
-    education: [
-      { text: "Courses", icon: BookOpen, href: "/education/courses" },
-      { text: "Tutorials", icon: BookOpen, href: "/education/tutorials" },
-      { text: "Resources", icon: BookOpen, href: "/education/resources" },
-    ],
-    resources: [
-      { text: "Templates", icon: Layers, href: "/resources/templates" },
-      { text: "Assets", icon: Layers, href: "/resources/assets" },
-      { text: "Library", icon: Layers, href: "/resources/library" },
-    ],
-    meetings: [
-      { text: "Schedule", icon: Calendar, href: "/meetings/schedule" },
-      { text: "Upcoming", icon: Calendar, href: "/meetings/upcoming" },
-      { text: "Past", icon: Calendar, href: "/meetings/past" },
-    ],
-    settings: [
-      { text: "Profile", icon: Settings, href: "/settings/profile" },
-      { text: "Security", icon: Settings, href: "/settings/security" },
-      { text: "Preferences", icon: Settings, href: "/settings/preferences" },
-    ],
-  };
+  const handleMenuClick = (id: string, hasChildren: boolean, href?: string) => {
+    if (hasChildren) {
+      setActiveMenu((prev) => (prev === id ? null : id));
+    } else if (href) {
+      // Handle navigation for items without children
+      window.location.href = href;
+    }
 
-  const handleMenuClick = (id: string) => {
-    setActiveMenu((prev) => (prev === id ? null : id));
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
@@ -138,42 +218,63 @@ export default function DynamicSidebar() {
             </div>
 
             <div className="flex flex-col gap-6 items-center">
-              {menuItems.map((item) => (
-                <div key={item.id} className="relative">
-                  <motion.button
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer ${
-                      activeMenu === item.id
-                        ? "bg-blue-600"
-                        : "hover:bg-gray-300 dark:hover:bg-gray-800"
-                    }`}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleMenuClick(item.id)}
-                    onMouseEnter={() => setActiveTooltip(item.id)}
-                    onMouseLeave={() => setActiveTooltip(null)}
-                  >
-                    <span className="text-gray-800 dark:text-white">
-                      <item.icon className="w-4 h-4" />
-                    </span>
-                  </motion.button>
+              {menuItems.map((item) => {
+                const hasChildren = item.children && item.children.length > 0;
 
-                  <AnimatePresence>
-                    {activeTooltip === item.id && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        className="absolute left-14 top-1 bg-gray-700 text-white text-sm py-1 px-2 rounded whitespace-nowrap z-50"
+                return (
+                  <div key={item.id} className="relative">
+                    {hasChildren ? (
+                      <motion.button
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer ${
+                          activeMenu === item.id
+                            ? "bg-blue-600"
+                            : "hover:bg-gray-300 dark:hover:bg-gray-800"
+                        }`}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleMenuClick(item.id, true)}
+                        onMouseEnter={() => setActiveTooltip(item.id)}
+                        onMouseLeave={() => setActiveTooltip(null)}
                       >
-                        {item.label}
-                        <div className="absolute left-0 top-1/2 transform -translate-x-full -translate-y-1/2">
-                          <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-gray-700"></div>
-                        </div>
-                      </motion.div>
+                        <span className="text-gray-800 dark:text-white">
+                          <item.icon className="w-4 h-4" />
+                        </span>
+                      </motion.button>
+                    ) : (
+                      <Link
+                        href={item.href || "#"}
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          activeMenu === item.id
+                            ? "bg-blue-600"
+                            : "hover:bg-gray-300 dark:hover:bg-gray-800"
+                        }`}
+                        onMouseEnter={() => setActiveTooltip(item.id)}
+                        onMouseLeave={() => setActiveTooltip(null)}
+                      >
+                        <span className="text-gray-800 dark:text-white">
+                          <item.icon className="w-4 h-4" />
+                        </span>
+                      </Link>
                     )}
-                  </AnimatePresence>
-                </div>
-              ))}
+
+                    <AnimatePresence>
+                      {activeTooltip === item.id && (
+                        <motion.div
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -10 }}
+                          className="absolute left-14 top-1 bg-gray-700 text-white text-sm py-1 px-2 rounded whitespace-nowrap z-50"
+                        >
+                          {item.label}
+                          <div className="absolute left-0 top-1/2 transform -translate-x-full -translate-y-1/2">
+                            <div className="w-0 h-0 border-y-4 border-y-transparent border-r-4 border-r-gray-700"></div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
         )}
@@ -189,23 +290,21 @@ export default function DynamicSidebar() {
             exit={{ x: -220, opacity: 0 }}
             transition={{ type: "tween" }}
             ref={secondaryRef}
-            className="fixed left-16 w-64 h-full bg-gray-300 dark:bg-gray-800  z-40 shadow-xl"
+            className="fixed left-16 w-64 h-full bg-gray-300 dark:bg-gray-800 z-40 shadow-xl"
           >
             <div className="p-4">
               <h3 className="text-xl font-medium mb-4 dark:text-gray-200 text-gray-800">
                 {menuItems.find((item) => item.id === activeMenu)?.label}
               </h3>
               <div className="space-y-2">
-                {secondaryMenus[activeMenu].map((item, index) => (
-                  <a
-                    key={index}
-                    href={item.href}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 text-gray-900 hover:text-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 dark:hover:text-white duration-300"
-                  >
-                    <item.icon className="w-4 h-4" />
-                    <span>{item.text}</span>
-                  </a>
-                ))}
+                {menuItems.find((item) => item.id === activeMenu)?.children && (
+                  <SubMenuItems
+                    items={
+                      menuItems.find((item) => item.id === activeMenu)
+                        ?.children || []
+                    }
+                  />
+                )}
               </div>
             </div>
           </motion.div>
